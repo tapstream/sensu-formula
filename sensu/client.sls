@@ -87,8 +87,6 @@ install_{{ gem }}:
     - name: {{ gem }}
     {% if sensu.client.embedded_ruby %}
     - gem_bin: /opt/sensu/embedded/bin/gem
-    {% else %}
-    - gem_bin: None
     {% endif %}
     - rdoc: False
     - ri: False

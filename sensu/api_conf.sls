@@ -14,7 +14,7 @@ include:
     - dataset:
         api:
           host: {{ sensu.api.host }}
-          password: {{ sensu.api.password }}
           port: {{ sensu.api.port }}
-          user: {{ sensu.api.user }}
+          {% if sensu.api.password is defined and sensu.api.password is not none %}password: {{ sensu.api.password }}{% endif %}
+          {% if sensu.api.user is defined and sensu.api.user is not none %}user: {{ sensu.api.user }}{% endif %}
 

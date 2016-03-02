@@ -13,6 +13,17 @@
 #
 # Released under the same terms as Sensu (the MIT license); see LICENSE
 # for details.
+#
+# Uses the following function defined on the master so as to avoid having to use a superuser:
+# CREATE OR REPLACE FUNCTION streaming_slave_check() RETURNS TABLE (client_hostname text, client_addr inet, byte_lag numeric)
+# LANGUAGE SQL SECURITY DEFINER
+# AS $$
+#     SELECT client_hostname
+#     , client_addr
+#     , pg_xlog_location_diff(pg_current_xlog_location(), pg_stat_replication.replay_location) AS byte_lag
+#     FROM pg_stat_replication;
+# $$;
+
 
 require 'sensu-plugin/metric/cli'
 require 'pg'
@@ -53,13 +64,13 @@ class PostgresMasterReplicationLagMetrics < Sensu::Plugin::Metric::CLI::Graphite
 
     con     = PG::Connection.new(config[:hostname], config[:port], nil, nil, 'postgres', config[:user], config[:password])
     request = [
-      'select client_hostname, pg_xlog_location_diff(pg_current_xlog_location(), pg_stat_replication.replay_location) from pg_stat_replication'
+      'select client_hostname, byte_lag from streaming_slave_check()'
     ]
 
     con.exec(request.join(' ')) do |result|
       result.each do |row|
-        pg_client_hostname = row['client_hostname'].gsub(/\./, '_')
-        pg_clients[pg_client_hostname] = row['pg_xlog_location_diff']
+        pg_client_hostname = row['client_hostname'].split(".")[0]
+        pg_clients[pg_client_hostname] = row['byte_lag']
       end
     end
 
